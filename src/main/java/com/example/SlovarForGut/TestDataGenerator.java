@@ -1,46 +1,56 @@
 package com.example.SlovarForGut;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
 public class TestDataGenerator {
 
     public static void main(String[] args) {
+        cleanUpOldFiles();
+
         DictionaryRepository repository = new DictionaryRepository();
         DictionaryService service = new DictionaryService(repository);
 
-        System.out.println("  ГЕНЕРАЦИЯ СЛОВАРЯ СЛОВ (mapWord.ser)  ");
-        Dictionary wordDict = new Dictionary();
+        System.out.println("ГЕНЕРАЦИЯ СЛОВАРЯ СЛОВ");
+        addSafely(service, DictionaryType.WORD, "java", Arrays.asList("кофе", "остров", "язык"));
+        addSafely(service, DictionaryType.WORD, "book", Arrays.asList("книга", "чтиво", "томик"));
+        addSafely(service, DictionaryType.WORD, "hello", Arrays.asList("привет", "здравствуйте"));
 
-        addSafely(service, wordDict, "java", Arrays.asList("кофе", "остров", "язык"), DictionaryType.WORD.getDefaultFileName());
-        addSafely(service, wordDict, "book", Arrays.asList("книга", "чтиво", "томик"), DictionaryType.WORD.getDefaultFileName());
-        addSafely(service, wordDict, "hello", Arrays.asList("привет", "здравствуйте"), DictionaryType.WORD.getDefaultFileName());
-
-        addSafely(service, wordDict, "cats", Arrays.asList(
+        addSafely(service, DictionaryType.WORD, "cats", Arrays.asList(
                 "кот", "кошка", "кот", "Кот", "мяу!", "кот123", "", null, "    "
-        ), DictionaryType.WORD.getDefaultFileName());
+        ));
 
+        System.out.println("\nГЕНЕРАЦИЯ СЛОВАРЯ ЦИФР");
+        addSafely(service, DictionaryType.NUMBER, "12345", Arrays.asList("один", "два", "три"));
+        addSafely(service, DictionaryType.NUMBER, "00000", Arrays.asList("ноль", "ничего"));
 
-        System.out.println("\n  ГЕНЕРАЦИЯ СЛОВАРЯ ЦИФР (mapNums.ser)  ");
-        Dictionary numDict = new Dictionary();
-
-        addSafely(service, numDict, "12345", Arrays.asList("один", "два", "три"), DictionaryType.NUMBER.getDefaultFileName());
-        addSafely(service, numDict, "00000", Arrays.asList("ноль", "ничего"), DictionaryType.NUMBER.getDefaultFileName());
-
-        addSafely(service, numDict, "99999", Arrays.asList(
+        addSafely(service, DictionaryType.NUMBER, "99999", Arrays.asList(
                 "МАКСИМУМ", "Hello", "привет мир", "дефис-тут", "АБВГД", "КОНЕЦ"
-        ), DictionaryType.NUMBER.getDefaultFileName());
+        ));
 
-        System.out.println("\nТестовые данные успешно сгенерированы! (Ошибки выше — это успешная проверка валидации)");
+        System.out.println("\nТестовые данные успешно сгенерированы!");
     }
 
-
-    private static void addSafely(DictionaryService service, Dictionary dictionary, String key, List<String> values, String fileName) {
+    private static void addSafely(DictionaryService service, DictionaryType type, String key, List<String> values) {
         try {
-            service.addElement(dictionary, key, values, fileName);
-            System.out.println(" [+] Успешно добавлен ключ: " + key);
+            if (key == null || !key.matches(type.getKeyRegex())) {
+                throw new IllegalArgumentException("Ключ не соответствует формату! Правило: " + type.getFormatDescription());
+            }
+
+            service.addElement(type, key, values);
+            System.out.println("Успешно добавлен ключ: " + key);
         } catch (IllegalArgumentException e) {
-            System.out.println(" [-] Ошибка валидации при добавлении ключа [" + key + "]: " + e.getMessage());
+            System.out.println("Ошибка валидации при добавлении ключа [" + key + "]: " + e.getMessage());
+        }
+    }
+
+    private static void cleanUpOldFiles() {
+        boolean deletedWord = new File(DictionaryType.WORD.getDefaultFileName() + ".ser").delete();
+        boolean deletedNum = new File(DictionaryType.NUMBER.getDefaultFileName() + ".ser").delete();
+
+        if (deletedWord || deletedNum) {
+            System.out.println("Старые файлы словарей удалены.\n");
         }
     }
 }

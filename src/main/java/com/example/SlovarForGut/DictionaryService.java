@@ -1,7 +1,10 @@
 package com.example.SlovarForGut;
+
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 import java.util.List;
 import java.util.Set;
-import org.springframework.stereotype.Service;
 
 @Service
 public class DictionaryService {
@@ -12,24 +15,38 @@ public class DictionaryService {
         this.repository = repository;
     }
 
-    public Dictionary loadDictionary(String fileName) {
-        return repository.load(fileName);
+    public synchronized List<Dictionary.Element> getAll(DictionaryType type) {
+        return repository.load(type.getDefaultFileName()).getAll();
     }
 
-    public void addElement(Dictionary dictionary, String key, List<String> values, String fileName) {
+    public synchronized Optional<SearchResult> globalSearch(String key) {
+        for (DictionaryType type : DictionaryType.values()) {
+            if (key.matches(type.getKeyRegex())) {
+                Set<String> values = findElement(type, key);
+                if (!values.isEmpty()) {
+                    return Optional.of(new SearchResult(type.name(), type.getName(), values));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    public synchronized Set<String> findElement(DictionaryType type, String key) {
+        return repository.load(type.getDefaultFileName()).get(key);
+    }
+
+    public synchronized void addElement(DictionaryType type, String key, List<String> values) {
+        Dictionary dictionary = repository.load(type.getDefaultFileName());
         dictionary.put(key, values);
-        repository.save(dictionary, fileName);
+        repository.save(dictionary, type.getDefaultFileName());
     }
 
-    public boolean removeElement(Dictionary dictionary, String key, String fileName) {
+    public synchronized boolean removeElement(DictionaryType type, String key) {
+        Dictionary dictionary = repository.load(type.getDefaultFileName());
         if (dictionary.remove(key)) {
-            repository.save(dictionary, fileName);
+            repository.save(dictionary, type.getDefaultFileName());
             return true;
         }
         return false;
-    }
-
-    public Set<String> findElement(Dictionary dictionary, String key) {
-        return dictionary.get(key);
     }
 }
