@@ -26,6 +26,7 @@ public class DictionaryController {
         }
     }
 
+
     // GET http://localhost:8080/api/dictionary/search/java
     @GetMapping("/search/{key}")
     public ResponseEntity<?> searchGlobally(@PathVariable String key) {
@@ -44,7 +45,7 @@ public class DictionaryController {
     public ResponseEntity<?> getAllElements(@PathVariable String type) {
         try {
             DictionaryType dictType = getType(type);
-            List<Dictionary.Element> elements = dictionaryService.getAll(dictType);
+            List<DictionaryEntry> elements = dictionaryService.getAll(dictType);
             return ResponseEntity.ok(elements);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
